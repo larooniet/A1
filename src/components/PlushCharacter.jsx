@@ -1,31 +1,28 @@
 import React, { useRef, useState, useMemo } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useSpring, animated, config } from '@react-spring/three'
-import { Sphere, MeshTransmissionMaterial, Float } from '@react-three/drei'
+import { Sphere } from '@react-three/drei'
 import * as THREE from 'three'
+import { useCharacterStore } from '../hooks/useCharacterStore'
 
-// 毛绒材质 - 使用自定义Shader模拟绒毛效果
-function FurMaterial({ color = '#ffb6c1', ...props }) {
+// 毛绒材质 - 接入捏制参数
+function FurMaterial({ color = '#ffb6c1', roughness = 0.9, ...props }) {
   const materialRef = useRef()
 
-  // 创建程序化噪声纹理用于法线贴图
   const furNormalMap = useMemo(() => {
     const canvas = document.createElement('canvas')
     canvas.width = 512
     canvas.height = 512
     const ctx = canvas.getContext('2d')
-
-    // 生成噪声
     const imageData = ctx.createImageData(512, 512)
     for (let i = 0; i < imageData.data.length; i += 4) {
       const noise = Math.random() * 255
-      imageData.data[i] = noise     // R
-      imageData.data[i + 1] = noise // G
-      imageData.data[i + 2] = noise // B
-      imageData.data[i + 3] = 255   // A
+      imageData.data[i] = noise
+      imageData.data[i + 1] = noise
+      imageData.data[i + 2] = noise
+      imageData.data[i + 3] = 255
     }
     ctx.putImageData(imageData, 0, 0)
-
     const texture = new THREE.CanvasTexture(canvas)
     texture.wrapS = THREE.RepeatWrapping
     texture.wrapT = THREE.RepeatWrapping
@@ -37,7 +34,7 @@ function FurMaterial({ color = '#ffb6c1', ...props }) {
     <meshPhysicalMaterial
       ref={materialRef}
       color={color}
-      roughness={0.9}
+      roughness={roughness}
       metalness={0.05}
       normalMap={furNormalMap}
       normalScale={[0.3, 0.3]}
@@ -53,14 +50,13 @@ function FurMaterial({ color = '#ffb6c1', ...props }) {
   )
 }
 
-// 眼睛组件 - 大而圆，带高光
-function Eye({ position, scale = 1 }) {
+// 眼睛组件 - 接入大小和间距参数
+function Eye({ position, scale = 1, isBlinking }) {
   const eyeRef = useRef()
 
   return (
     <group position={position}>
-      {/* 眼球 */}
-      <Sphere args={[0.18 * scale, 32, 32]} ref={eyeRef}>
+      <Sphere args={[0.18 * scale, 32, 32]} ref={eyeRef} scale={[1, isBlinking ? 0.1 : 1, 1]}>
         <meshPhysicalMaterial
           color="#1a1a2e"
           roughness={0.1}
@@ -69,30 +65,26 @@ function Eye({ position, scale = 1 }) {
           clearcoatRoughness={0.1}
         />
       </Sphere>
-      {/* 主高光 */}
-      <Sphere args={[0.06 * scale, 16, 16]} position={[0.06, 0.08, 0.14]}>
+      <Sphere args={[0.06 * scale, 16, 16]} position={[0.06 * scale, 0.08 * scale, 0.14]}>
         <meshBasicMaterial color="#ffffff" />
       </Sphere>
-      {/* 次高光 */}
-      <Sphere args={[0.03 * scale, 16, 16]} position={[-0.05, -0.05, 0.15]}>
+      <Sphere args={[0.03 * scale, 16, 16]} position={[-0.05 * scale, -0.05 * scale, 0.15]}>
         <meshBasicMaterial color="#ffffff" opacity={0.6} transparent />
       </Sphere>
-      {/* 底部反光 */}
-      <Sphere args={[0.1 * scale, 16, 16]} position={[0, -0.08, 0.12]}>
+      <Sphere args={[0.1 * scale, 16, 16]} position={[0, -0.08 * scale, 0.12]}>
         <meshBasicMaterial color="#ffb6c1" opacity={0.3} transparent />
       </Sphere>
     </group>
   )
 }
 
-// 耳朵组件
-function Ear({ position, rotation, scale = 1 }) {
+// 耳朵组件 - 接入大小和角度参数
+function Ear({ position, rotation, scale = 1, color }) {
   return (
     <group position={position} rotation={rotation}>
       <Sphere args={[0.25 * scale, 32, 32]} scale={[1, 1.3, 0.6]}>
-        <FurMaterial color="#ffb6c1" />
+        <FurMaterial color={color} />
       </Sphere>
-      {/* 耳朵内侧 */}
       <Sphere args={[0.15 * scale, 32, 32]} position={[0, 0, 0.08]} scale={[0.8, 1.1, 0.5]}>
         <meshPhysicalMaterial
           color="#ff69b4"
@@ -105,27 +97,26 @@ function Ear({ position, rotation, scale = 1 }) {
   )
 }
 
-// 腮红
-function Blush({ position }) {
+// 腮红 - 接入强度参数
+function Blush({ position, intensity = 0.4 }) {
   return (
     <Sphere args={[0.12, 16, 16]} position={position} scale={[1.3, 0.8, 0.5]}>
       <meshPhysicalMaterial
         color="#ff69b4"
         transparent
-        opacity={0.4}
+        opacity={intensity}
         roughness={1}
         emissive="#ff1493"
-        emissiveIntensity={0.2}
+        emissiveIntensity={intensity * 0.5}
       />
     </Sphere>
   )
 }
 
-// 身体主体
-function Body({ isJumping }) {
+// 身体主体 - 接入圆润度参数
+function Body({ roundness, color, bellyColor, glowIntensity, isJumping }) {
   const bodyRef = useRef()
 
-  // 呼吸动画
   useFrame((state) => {
     if (bodyRef.current && !isJumping) {
       const t = state.clock.elapsedTime
@@ -137,17 +128,14 @@ function Body({ isJumping }) {
 
   return (
     <group ref={bodyRef}>
-      {/* 主身体 - 圆润的胶囊形状 */}
-      <Sphere args={[1, 64, 64]} scale={[1, 1.15, 0.9]} position={[0, -0.3, 0]}>
-        <FurMaterial color="#ffb6c1" />
+      <Sphere args={[1, 64, 64]} scale={[1, roundness, 0.9]} position={[0, -0.3, 0]}>
+        <FurMaterial color={color} />
       </Sphere>
-
-      {/* 底部发光 */}
       <Sphere args={[0.9, 32, 32]} position={[0, -0.8, 0.1]} scale={[1, 0.5, 0.8]}>
         <meshPhysicalMaterial
-          color="#ff69b4"
-          emissive="#ff1493"
-          emissiveIntensity={0.3}
+          color={bellyColor}
+          emissive={bellyColor}
+          emissiveIntensity={glowIntensity}
           transparent
           opacity={0.6}
           roughness={0.9}
@@ -158,7 +146,7 @@ function Body({ isJumping }) {
 }
 
 // 手臂
-function Arm({ position, rotation, side }) {
+function Arm({ position, rotation, side, color }) {
   const armRef = useRef()
 
   useFrame((state) => {
@@ -171,9 +159,8 @@ function Arm({ position, rotation, side }) {
   return (
     <group ref={armRef} position={position} rotation={rotation}>
       <Sphere args={[0.35, 32, 32]} scale={[0.7, 1.2, 0.8]}>
-        <FurMaterial color="#ffb6c1" />
+        <FurMaterial color={color} />
       </Sphere>
-      {/* 手掌 */}
       <Sphere args={[0.25, 32, 32]} position={[0, -0.4, 0]}>
         <FurMaterial color="#ff69b4" />
       </Sphere>
@@ -182,7 +169,7 @@ function Arm({ position, rotation, side }) {
 }
 
 // 腿部
-function Leg({ position, side }) {
+function Leg({ position, side, color }) {
   const legRef = useRef()
 
   useFrame((state) => {
@@ -195,9 +182,8 @@ function Leg({ position, side }) {
   return (
     <group ref={legRef} position={position}>
       <Sphere args={[0.3, 32, 32]} scale={[0.8, 1.1, 0.9]}>
-        <FurMaterial color="#ffb6c1" />
+        <FurMaterial color={color} />
       </Sphere>
-      {/* 脚掌 */}
       <Sphere args={[0.22, 32, 32]} position={[0, -0.35, 0.05]} scale={[1, 0.6, 1.2]}>
         <FurMaterial color="#ff69b4" />
       </Sphere>
@@ -211,7 +197,16 @@ export default function PlushCharacter({ position = [0, 0, 0] }) {
   const headRef = useRef()
   const [isJumping, setIsJumping] = useState(false)
   const [hovered, setHovered] = useState(false)
-  const { viewport, mouse } = useThree()
+  const [isBlinking, setIsBlinking] = useState(false)
+  const { mouse } = useThree()
+
+  // 从 store 读取捏制参数
+  const appearance = useCharacterStore(state => state.appearance)
+  const { 
+    bodyColor, bellyColor, eyeSize, eyeSpacing, 
+    earSize, earAngle, bodyRoundness, 
+    blushIntensity, glowIntensity, furRoughness 
+  } = appearance
 
   // 跳跃动画
   const { jumpY, jumpScale } = useSpring({
@@ -221,34 +216,32 @@ export default function PlushCharacter({ position = [0, 0, 0] }) {
     onRest: () => setIsJumping(false)
   })
 
-  // 鼠标追踪 - 头部跟随
+  // 鼠标追踪
   useFrame((state) => {
     if (headRef.current) {
-      // 平滑插值到鼠标位置
       const targetX = mouse.x * 0.5
       const targetY = mouse.y * 0.3
       headRef.current.rotation.y = THREE.MathUtils.lerp(headRef.current.rotation.y, targetX, 0.05)
       headRef.current.rotation.x = THREE.MathUtils.lerp(headRef.current.rotation.x, targetY, 0.05)
     }
-
-    // 整体轻微跟随
     if (groupRef.current && !isJumping) {
       groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, mouse.x * 0.2, 0.02)
     }
   })
 
-  // 点击弹跳
+  // 随机眨眼
+  useState(() => {
+    const blinkInterval = setInterval(() => {
+      setIsBlinking(true)
+      setTimeout(() => setIsBlinking(false), 150)
+    }, 3000 + Math.random() * 2000)
+    return () => clearInterval(blinkInterval)
+  })
+
   const handleClick = () => {
     if (!isJumping) {
       setIsJumping(true)
-      // 创建星星粒子效果（简化版）
-      createBurstParticles()
     }
-  }
-
-  const createBurstParticles = () => {
-    // 这里可以触发粒子系统
-    console.log('✨ 弹跳！')
   }
 
   return (
@@ -263,24 +256,41 @@ export default function PlushCharacter({ position = [0, 0, 0] }) {
     >
       {/* 头部组 */}
       <group ref={headRef} position={[0, 0.6, 0]}>
-        {/* 主头部 */}
         <Sphere args={[0.85, 64, 64]} scale={[1.1, 0.95, 1]}>
-          <FurMaterial color={hovered ? '#ffc0cb' : '#ffb6c1'} />
+          <FurMaterial color={hovered ? '#ffc0cb' : bodyColor} roughness={furRoughness} />
         </Sphere>
 
-        {/* 耳朵 */}
-        <Ear position={[-0.5, 0.5, 0]} rotation={[0, 0, -0.3]} />
-        <Ear position={[0.5, 0.5, 0]} rotation={[0, 0, 0.3]} />
+        {/* 耳朵 - 接入大小和角度参数 */}
+        <Ear 
+          position={[-0.5, 0.5, 0]} 
+          rotation={[0, 0, -earAngle]} 
+          scale={earSize} 
+          color={bodyColor}
+        />
+        <Ear 
+          position={[0.5, 0.5, 0]} 
+          rotation={[0, 0, earAngle]} 
+          scale={earSize} 
+          color={bodyColor}
+        />
 
-        {/* 眼睛 */}
-        <Eye position={[-0.28, 0.05, 0.72]} />
-        <Eye position={[0.28, 0.05, 0.72]} />
+        {/* 眼睛 - 接入大小和间距参数 */}
+        <Eye 
+          position={[-0.28 * eyeSpacing, 0.05, 0.72]} 
+          scale={eyeSize} 
+          isBlinking={isBlinking}
+        />
+        <Eye 
+          position={[0.28 * eyeSpacing, 0.05, 0.72]} 
+          scale={eyeSize} 
+          isBlinking={isBlinking}
+        />
 
-        {/* 腮红 */}
-        <Blush position={[-0.45, -0.15, 0.65]} />
-        <Blush position={[0.45, -0.15, 0.65]} />
+        {/* 腮红 - 接入强度参数 */}
+        <Blush position={[-0.45, -0.15, 0.65]} intensity={blushIntensity} />
+        <Blush position={[0.45, -0.15, 0.65]} intensity={blushIntensity} />
 
-        {/* 小鼻子 */}
+        {/* 鼻子 */}
         <Sphere args={[0.06, 16, 16]} position={[0, -0.08, 0.78]}>
           <meshPhysicalMaterial
             color="#ff1493"
@@ -290,46 +300,49 @@ export default function PlushCharacter({ position = [0, 0, 0] }) {
           />
         </Sphere>
 
-        {/* 嘴巴 - 简化为一个小凹陷 */}
+        {/* 嘴巴 */}
         <Sphere args={[0.04, 16, 16]} position={[0, -0.18, 0.75]} scale={[1.5, 0.5, 0.5]}>
-          <meshPhysicalMaterial
-            color="#ff69b4"
-            roughness={0.8}
-          />
+          <meshPhysicalMaterial color="#ff69b4" roughness={0.8} />
         </Sphere>
 
-        {/* 头顶绒毛装饰 */}
+        {/* 头顶绒毛 */}
         <Sphere args={[0.08, 16, 16]} position={[0, 0.85, 0]}>
-          <FurMaterial color="#ffc0cb" />
+          <FurMaterial color="#ffc0cb" roughness={furRoughness} />
         </Sphere>
       </group>
 
-      {/* 身体 */}
-      <Body isJumping={isJumping} />
+      {/* 身体 - 接入圆润度和颜色参数 */}
+      <Body 
+        roundness={bodyRoundness} 
+        color={bodyColor}
+        bellyColor={bellyColor}
+        glowIntensity={glowIntensity}
+        isJumping={isJumping}
+      />
 
       {/* 手臂 */}
-      <Arm position={[-0.7, -0.2, 0.2]} rotation={[0, 0, 0.4]} side="left" />
-      <Arm position={[0.7, -0.2, 0.2]} rotation={[0, 0, -0.4]} side="right" />
+      <Arm position={[-0.7, -0.2, 0.2]} rotation={[0, 0, 0.4]} side="left" color={bodyColor} />
+      <Arm position={[0.7, -0.2, 0.2]} rotation={[0, 0, -0.4]} side="right" color={bodyColor} />
 
       {/* 腿部 */}
-      <Leg position={[-0.4, -1.1, 0.2]} side="left" />
-      <Leg position={[0.4, -1.1, 0.2]} side="right" />
+      <Leg position={[-0.4, -1.1, 0.2]} side="left" color={bodyColor} />
+      <Leg position={[0.4, -1.1, 0.2]} side="right" color={bodyColor} />
 
       {/* 尾巴 */}
       <group position={[0, -0.6, -0.6]}>
         <Sphere args={[0.25, 32, 32]} scale={[1, 1.2, 0.8]}>
-          <FurMaterial color="#ff69b4" />
+          <FurMaterial color="#ff69b4" roughness={furRoughness} />
         </Sphere>
         <Sphere args={[0.15, 32, 32]} position={[0, -0.25, -0.1]}>
-          <FurMaterial color="#ff1493" />
+          <FurMaterial color="#ff1493" roughness={furRoughness} />
         </Sphere>
       </group>
 
       {/* 环绕光晕 */}
       <pointLight 
         position={[0, 0, 1]} 
-        intensity={0.5} 
-        color="#ff69b4"
+        intensity={glowIntensity * 2} 
+        color={bellyColor}
         distance={3}
       />
     </animated.group>

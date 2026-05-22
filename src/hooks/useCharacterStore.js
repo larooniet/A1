@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 
-// 默认小熊形象
 const DEFAULT_SHAPES = {
   head: 'sphere',
   body: 'capsule',
@@ -14,7 +13,7 @@ const DEFAULT_SHAPES = {
 }
 
 const DEFAULT_COLORS = {
-  head: '#8B6914',      // 深棕色
+  head: '#8B6914',
   body: '#8B6914',
   leftArm: '#8B6914',
   rightArm: '#8B6914',
@@ -22,30 +21,42 @@ const DEFAULT_COLORS = {
   rightLeg: '#8B6914',
   leftEar: '#8B6914',
   rightEar: '#8B6914',
-  tail: '#654321',      // 更深棕色
+  tail: '#654321',
   eye: '#1a1a2e',
   blush: '#D2691E',
   nose: '#2F1810',
 }
 
-const DEFAULT_SCALES = {
-  head: { x: 1.2, y: 1.0, z: 1.1 },
-  body: { x: 1.3, y: 1.0, z: 1.2 },
-  leftArm: { x: 0.6, y: 1.0, z: 0.6 },
-  rightArm: { x: 0.6, y: 1.0, z: 0.6 },
-  leftLeg: { x: 0.7, y: 0.9, z: 0.7 },
-  rightLeg: { x: 0.7, y: 0.9, z: 0.7 },
-  leftEar: { x: 0.8, y: 0.8, z: 0.5 },
-  rightEar: { x: 0.8, y: 0.8, z: 0.5 },
-  tail: { x: 0.5, y: 0.5, z: 0.5 },
+// 顶点变形参数 - 橡皮泥效果
+const DEFAULT_DEFORM = {
+  head: { bulge: 0, pinch: 0, twist: 0 },
+  body: { bulge: 0, pinch: 0, twist: 0 },
+  leftArm: { bulge: 0, pinch: 0, twist: 0 },
+  rightArm: { bulge: 0, pinch: 0, twist: 0 },
+  leftLeg: { bulge: 0, pinch: 0, twist: 0 },
+  rightLeg: { bulge: 0, pinch: 0, twist: 0 },
+}
+
+// 连接点配置 - 从表面开始
+const DEFAULT_JOINTS = {
+  head: { parent: 'body', anchor: [0, 0.85, 0], offset: [0, -0.5, 0] },
+  leftArm: { parent: 'body', anchor: [-0.8, 0.3, 0], offset: [0, 0.5, 0] },
+  rightArm: { parent: 'body', anchor: [0.8, 0.3, 0], offset: [0, 0.5, 0] },
+  leftLeg: { parent: 'body', anchor: [-0.4, -0.8, 0], offset: [0, 0.5, 0] },
+  rightLeg: { parent: 'body', anchor: [0.4, -0.8, 0], offset: [0, 0.5, 0] },
+  leftEar: { parent: 'head', anchor: [-0.6, 0.7, 0], offset: [0, -0.3, 0] },
+  rightEar: { parent: 'head', anchor: [0.6, 0.7, 0], offset: [0, -0.3, 0] },
+  tail: { parent: 'body', anchor: [0, -0.5, -0.8], offset: [0, 0, 0.3] },
 }
 
 export const useCharacterStore = create((set, get) => ({
-  name: '小熊',  // 可自定义名字
+  name: '小熊',
   appearance: {
     shapes: { ...DEFAULT_SHAPES },
     colors: { ...DEFAULT_COLORS },
-    scales: { ...DEFAULT_SCALES },
+    scales: {},
+    deform: { ...DEFAULT_DEFORM },
+    joints: { ...DEFAULT_JOINTS },
     eyeSize: 1,
     eyeSpacing: 1,
     blushIntensity: 0.3,
@@ -55,8 +66,11 @@ export const useCharacterStore = create((set, get) => ({
 
   expression: 'happy',
   isJumping: false,
+  isWalking: false,
+  isPlaying: false,
   chatHistory: [],
   personality: 'friendly',
+  showChatPanel: true,
 
   setName: (name) => set({ name }),
 
@@ -64,7 +78,22 @@ export const useCharacterStore = create((set, get) => ({
     appearance: { ...state.appearance, [key]: value }
   })),
 
+  setDeform: (part, type, value) => set(state => ({
+    appearance: {
+      ...state.appearance,
+      deform: {
+        ...state.appearance.deform,
+        [part]: { ...state.appearance.deform[part], [type]: value }
+      }
+    }
+  })),
+
   setExpression: (expression) => set({ expression }),
+
+  setWalking: (isWalking) => set({ isWalking }),
+  setPlaying: (isPlaying) => set({ isPlaying }),
+
+  toggleChatPanel: () => set(state => ({ showChatPanel: !state.showChatPanel })),
 
   addChatMessage: (role, content) => set(state => ({
     chatHistory: [...state.chatHistory, { role, content, timestamp: Date.now() }]
@@ -77,7 +106,9 @@ export const useCharacterStore = create((set, get) => ({
     appearance: {
       shapes: { ...DEFAULT_SHAPES },
       colors: { ...DEFAULT_COLORS },
-      scales: { ...DEFAULT_SCALES },
+      scales: {},
+      deform: { ...DEFAULT_DEFORM },
+      joints: { ...DEFAULT_JOINTS },
       eyeSize: 1,
       eyeSpacing: 1,
       blushIntensity: 0.3,

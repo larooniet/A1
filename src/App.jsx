@@ -13,6 +13,7 @@ import ChatSystem from './components/ChatSystem'
 import CharacterCreator from './components/CharacterCreator'
 import { BackgroundAudio } from './components/AudioSystem'
 import AudioControl from './components/AudioControl'
+import CameraControls from './components/CameraControls'
 
 function Scene() {
   return (
@@ -42,8 +43,11 @@ function Scene() {
 
       <MagicDust count={200} />
 
-      {/* 背景音乐系统 */}
+      {/* 背景音乐 */}
       <BackgroundAudio />
+
+      {/* 360度环绕控制器 */}
+      <CameraControls />
 
       <EffectComposer>
         <Bloom intensity={0.8} luminanceThreshold={0.3} luminanceSmoothing={0.9} mipmapBlur />
@@ -57,7 +61,7 @@ export default function App() {
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#0a0a1a', position: 'relative' }}>
       <Canvas
-        camera={{ position: [0, 0, 5], fov: 50 }}
+        camera={{ position: [0, 2, 6], fov: 50 }}
         gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
         dpr={[1, 2]}
       >
@@ -71,21 +75,21 @@ export default function App() {
       <CharacterCreator />
       <AudioControl />
 
-      {/* 底部提示 */}
+      {/* 操作提示 */}
       <div style={{
         position: 'fixed',
         bottom: '30px',
         left: '50%',
         transform: 'translateX(-50%)',
         color: 'rgba(255,255,255,0.7)',
-        fontSize: '0.9rem',
+        fontSize: '0.85rem',
         pointerEvents: 'none',
         textAlign: 'center',
         textShadow: '0 2px 10px rgba(0,0,0,0.5)',
         zIndex: 10,
       }}>
-        <div>✨ 移动鼠标与玩偶对视 · 点击让它跳跃 ✨</div>
-        <div style={{ fontSize: '0.8rem', marginTop: '4px', color: 'rgba(255,255,255,0.4)' }}>
+        <div>🖱 拖拽旋转 · 🤏 滚轮缩放 · ✋ 右键平移</div>
+        <div style={{ fontSize: '0.75rem', marginTop: '4px', color: 'rgba(255,255,255,0.4)' }}>
           🎨 左下角捏制 · 💬 右下角对话 · 🎵 底部音乐
         </div>
       </div>

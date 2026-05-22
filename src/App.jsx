@@ -14,6 +14,8 @@ import CharacterCreator from './components/CharacterCreator'
 import { BackgroundAudio } from './components/AudioSystem'
 import AudioControl from './components/AudioControl'
 import CameraControls from './components/CameraControls'
+import { DreamLightRibbons, FloatingOrbs, GlowingGround, StarRing, VolumetricFog } from './components/DreamScene'
+import { useCharacterStore } from './hooks/useCharacterStore'
 
 function Scene() {
   return (
@@ -32,6 +34,15 @@ function Scene() {
       <StarField />
       <Stars radius={100} depth={50} count={3000} factor={4} saturation={0.5} fade speed={1} />
 
+      {/* 梦幻场景元素 */}
+      <DreamLightRibbons count={5} />
+      <FloatingOrbs count={15} />
+      <GlowingGround />
+      <VolumetricFog />
+
+      <StarRing position={[-5, 3, -5]} radius={2} color="#ff69b4" />
+      <StarRing position={[5, -1, -8]} radius={3} color="#00bfff" />
+
       <CrystalCluster position={[-3, -1, -4]} />
       <CrystalCluster position={[3.5, 1, -5]} scale={0.7} rotation={[0, 1, 0]} />
       <FloatingIsland position={[-4, 3, -8]} />
@@ -43,10 +54,7 @@ function Scene() {
 
       <MagicDust count={200} />
 
-      {/* 背景音乐 */}
       <BackgroundAudio />
-
-      {/* 360度环绕控制器 */}
       <CameraControls />
 
       <EffectComposer>
@@ -57,7 +65,57 @@ function Scene() {
   )
 }
 
+function AnimationControls() {
+  const { isWalking, isPlaying, setWalking, setPlaying } = useCharacterStore()
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: '20px',
+      right: '20px',
+      display: 'flex',
+      gap: '8px',
+      zIndex: 100,
+    }}>
+      <button
+        onClick={() => { setWalking(!isWalking); setPlaying(false) }}
+        style={{
+          padding: '8px 16px',
+          borderRadius: '20px',
+          border: 'none',
+          background: isWalking ? 'linear-gradient(135deg, #00bfff, #9370db)' : 'rgba(255,255,255,0.1)',
+          color: 'white',
+          fontSize: '13px',
+          cursor: 'pointer',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255,255,255,0.2)',
+        }}
+      >
+        {isWalking ? '🚶 停止行走' : '🚶 开始行走'}
+      </button>
+      <button
+        onClick={() => { setPlaying(!isPlaying); setWalking(false) }}
+        style={{
+          padding: '8px 16px',
+          borderRadius: '20px',
+          border: 'none',
+          background: isPlaying ? 'linear-gradient(135deg, #ff69b4, #ff1493)' : 'rgba(255,255,255,0.1)',
+          color: 'white',
+          fontSize: '13px',
+          cursor: 'pointer',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255,255,255,0.2)',
+        }}
+      >
+        {isPlaying ? '🎉 停止打闹' : '🎉 开始打闹'}
+      </button>
+    </div>
+  )
+}
+
 export default function App() {
+  const showChatPanel = useCharacterStore(state => state.showChatPanel)
+
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#0a0a1a', position: 'relative' }}>
       <Canvas
@@ -71,11 +129,12 @@ export default function App() {
       </Canvas>
 
       {/* UI 层 */}
-      <ChatSystem />
+      <AnimationControls />
+      {showChatPanel && <ChatSystem />}
       <CharacterCreator />
       <AudioControl />
 
-      {/* 操作提示 */}
+      {/* 底部提示 */}
       <div style={{
         position: 'fixed',
         bottom: '30px',
@@ -90,7 +149,7 @@ export default function App() {
       }}>
         <div>🖱 拖拽旋转 · 🤏 滚轮缩放 · ✋ 右键平移</div>
         <div style={{ fontSize: '0.75rem', marginTop: '4px', color: 'rgba(255,255,255,0.4)' }}>
-          🎨 左下角捏制 · 💬 右下角对话 · 🎵 底部音乐
+          🎨 左下角捏制 · 💬 右下角对话 · 🎵 底部音乐 · 🚶 右上角动画
         </div>
       </div>
     </div>

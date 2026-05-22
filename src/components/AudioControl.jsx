@@ -233,12 +233,12 @@ export default function AudioControl() {
         </div>
       )}
 
-      <style>{"
+      <style>{`
         @keyframes audioBar {
           0% { height: 10px; opacity: 0.5; }
           100% { height: 35px; opacity: 1; }
         }
-      "}</style>
+      `}</style>
     </>
   )
 }

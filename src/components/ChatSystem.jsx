@@ -351,7 +351,7 @@ export default function ChatSystem() {
         </div>
       )}
 
-      <style>{\`
+      <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }
@@ -360,7 +360,7 @@ export default function ChatSystem() {
           0%, 100% { opacity: 0.4; }
           50% { opacity: 1; }
         }
-      \`}</style>
+      `}</style>
     </>
   )
 }

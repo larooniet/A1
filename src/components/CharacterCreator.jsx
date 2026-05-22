@@ -1,15 +1,31 @@
 import React from 'react'
 import { useCharacterStore } from '../hooks/useCharacterStore'
 
+const SHAPES = [
+  { id: 'sphere', name: '球体', icon: '🔮' },
+  { id: 'capsule', name: '胶囊', icon: '💊' },
+  { id: 'box', name: '方体', icon: '📦' },
+  { id: 'cylinder', name: '圆柱', icon: '🥫' },
+  { id: 'cone', name: '圆锥', icon: '🔺' },
+  { id: 'torus', name: '圆环', icon: '🍩' },
+]
+
+const BODY_PARTS = [
+  { key: 'head', name: '头部', defaultShape: 'sphere' },
+  { key: 'body', name: '身体', defaultShape: 'capsule' },
+  { key: 'leftArm', name: '左臂', defaultShape: 'capsule' },
+  { key: 'rightArm', name: '右臂', defaultShape: 'capsule' },
+  { key: 'leftLeg', name: '左腿', defaultShape: 'capsule' },
+  { key: 'rightLeg', name: '右腿', defaultShape: 'capsule' },
+  { key: 'leftEar', name: '左耳', defaultShape: 'sphere' },
+  { key: 'rightEar', name: '右耳', defaultShape: 'sphere' },
+  { key: 'tail', name: '尾巴', defaultShape: 'capsule' },
+]
+
 function ColorPicker({ label, value, onChange }) {
   return (
     <div style={{ marginBottom: '12px' }}>
-      <label style={{ 
-        color: 'rgba(255,255,255,0.7)', 
-        fontSize: '12px', 
-        display: 'block', 
-        marginBottom: '6px' 
-      }}>
+      <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', display: 'block', marginBottom: '6px' }}>
         {label}
       </label>
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -17,28 +33,16 @@ function ColorPicker({ label, value, onChange }) {
           type="color"
           value={value}
           onChange={e => onChange(e.target.value)}
-          style={{
-            width: '40px',
-            height: '40px',
-            border: 'none',
-            borderRadius: '10px',
-            cursor: 'pointer',
-            background: 'none',
-          }}
+          style={{ width: '40px', height: '40px', border: 'none', borderRadius: '10px', cursor: 'pointer', background: 'none' }}
         />
         <input
           type="text"
           value={value}
           onChange={e => onChange(e.target.value)}
           style={{
-            flex: 1,
-            padding: '8px 12px',
-            borderRadius: '10px',
+            flex: 1, padding: '8px 12px', borderRadius: '10px',
             border: '1px solid rgba(255, 105, 180, 0.3)',
-            background: 'rgba(0, 0, 0, 0.5)',
-            color: 'white',
-            fontSize: '13px',
-            outline: 'none',
+            background: 'rgba(0, 0, 0, 0.5)', color: 'white', fontSize: '13px', outline: 'none'
           }}
         />
       </div>
@@ -46,16 +50,12 @@ function ColorPicker({ label, value, onChange }) {
   )
 }
 
-function Slider({ label, value, min, max, step, onChange, description }) {
+function Slider({ label, value, min, max, step, onChange }) {
   return (
-    <div style={{ marginBottom: '16px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>
-          {label}
-        </label>
-        <span style={{ color: '#ff69b4', fontSize: '12px', fontWeight: 'bold' }}>
-          {value.toFixed(2)}
-        </span>
+    <div style={{ marginBottom: '12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>{label}</label>
+        <span style={{ color: '#ff69b4', fontSize: '12px' }}>{value.toFixed(2)}</span>
       </div>
       <input
         type="range"
@@ -65,275 +65,148 @@ function Slider({ label, value, min, max, step, onChange, description }) {
         value={value}
         onChange={e => onChange(parseFloat(e.target.value))}
         style={{
-          width: '100%',
-          height: '6px',
-          borderRadius: '3px',
-          outline: 'none',
-          cursor: 'pointer',
+          width: '100%', height: '6px', borderRadius: '3px', outline: 'none', cursor: 'pointer',
           appearance: 'none',
-          background: `linear-gradient(to right, #ff69b4 0%, #ff69b4 ${((value - min) / (max - min)) * 100}%, rgba(255,255,255,0.1) ${((value - min) / (max - min)) * 100}%)`,
+          background: `linear-gradient(to right, #ff69b4 0%, #ff69b4 ${((value - min) / (max - min)) * 100}%, rgba(255,255,255,0.1) ${((value - min) / (max - min)) * 100}%)`
         }}
       />
-      {description && (
-        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginTop: '4px' }}>
-          {description}
-        </div>
-      )}
     </div>
   )
 }
 
 export default function CharacterCreator() {
   const [isOpen, setIsOpen] = React.useState(false)
+  const [activeTab, setActiveTab] = React.useState('shapes') // shapes | colors | size
   const { appearance, setAppearance, resetAppearance } = useCharacterStore()
+
+  const setPartShape = (part, shape) => {
+    setAppearance('shapes', { ...appearance.shapes, [part]: shape })
+  }
+
+  const setPartColor = (part, color) => {
+    setAppearance('colors', { ...appearance.colors, [part]: color })
+  }
+
+  const setPartScale = (part, axis, value) => {
+    const current = appearance.scales[part] || { x: 1, y: 1, z: 1 }
+    setAppearance('scales', { ...appearance.scales, [part]: { ...current, [axis]: value } })
+  }
 
   return (
     <>
-      {/* 捏制按钮 */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         style={{
-          position: 'fixed',
-          bottom: '80px',
-          left: '20px',
-          width: '56px',
-          height: '56px',
-          borderRadius: '50%',
-          border: 'none',
+          position: 'fixed', bottom: '80px', left: '20px',
+          width: '56px', height: '56px', borderRadius: '50%', border: 'none',
           background: 'linear-gradient(135deg, #00bfff, #9370db)',
-          color: 'white',
-          fontSize: '24px',
-          cursor: 'pointer',
+          color: 'white', fontSize: '24px', cursor: 'pointer',
           boxShadow: '0 4px 20px rgba(0, 191, 255, 0.4)',
-          zIndex: 100,
-          transition: 'transform 0.2s, box-shadow 0.2s',
+          zIndex: 100, transition: 'transform 0.2s'
         }}
-        onMouseEnter={e => {
-          e.target.style.transform = 'scale(1.1)'
-          e.target.style.boxShadow = '0 6px 30px rgba(0, 191, 255, 0.6)'
-        }}
-        onMouseLeave={e => {
-          e.target.style.transform = 'scale(1)'
-          e.target.style.boxShadow = '0 4px 20px rgba(0, 191, 255, 0.4)'
-        }}
+        onMouseEnter={e => e.target.style.transform = 'scale(1.1)'}
+        onMouseLeave={e => e.target.style.transform = 'scale(1)'}
       >
         🎨
       </button>
 
-      {/* 捏制面板 */}
       {isOpen && (
         <div style={{
-          position: 'fixed',
-          bottom: '150px',
-          left: '20px',
-          width: '320px',
-          maxHeight: '70vh',
-          background: 'rgba(10, 10, 30, 0.95)',
-          borderRadius: '20px',
-          border: '1px solid rgba(0, 191, 255, 0.3)',
-          backdropFilter: 'blur(20px)',
-          zIndex: 100,
-          overflowY: 'auto',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
-          padding: '20px',
+          position: 'fixed', bottom: '150px', left: '20px', width: '360px',
+          maxHeight: '70vh', background: 'rgba(10, 10, 30, 0.95)',
+          borderRadius: '20px', border: '1px solid rgba(0, 191, 255, 0.3)',
+          backdropFilter: 'blur(20px)', zIndex: 100, overflowY: 'auto',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)'
         }}>
           {/* 标题 */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '20px',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '24px' }}>✨</span>
-              <div>
-                <div style={{ color: '#00bfff', fontWeight: 'bold', fontSize: '16px' }}>
-                  玩偶工坊
-                </div>
-                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>
-                  打造你的专属绒绒
-                </div>
-              </div>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ color: '#00bfff', fontWeight: 'bold', fontSize: '16px' }}>✨ 玩偶工坊</div>
+              <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>自定义每个身体部位的形状</div>
             </div>
-            <button
-              onClick={resetAppearance}
-              style={{
-                background: 'none',
-                border: '1px solid rgba(255,255,255,0.2)',
-                color: 'rgba(255,255,255,0.6)',
-                padding: '4px 10px',
-                borderRadius: '8px',
-                fontSize: '11px',
-                cursor: 'pointer',
-              }}
-            >
+            <button onClick={resetAppearance} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.6)', padding: '4px 10px', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>
               重置
             </button>
           </div>
 
-          {/* 颜色设置 */}
-          <div style={{
-            background: 'rgba(0, 0, 0, 0.3)',
-            borderRadius: '12px',
-            padding: '16px',
-            marginBottom: '16px',
-          }}>
-            <div style={{ color: '#00bfff', fontSize: '13px', fontWeight: 'bold', marginBottom: '12px' }}>
-              🎨 颜色
-            </div>
-            <ColorPicker
-              label="主体颜色"
-              value={appearance.bodyColor}
-              onChange={v => setAppearance('bodyColor', v)}
-            />
-            <ColorPicker
-              label="腹部/发光色"
-              value={appearance.bellyColor}
-              onChange={v => setAppearance('bellyColor', v)}
-            />
+          {/* Tab 切换 */}
+          <div style={{ display: 'flex', padding: '12px 20px 0', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+            {[
+              { id: 'shapes', label: '🔷 形状', icon: '🔷' },
+              { id: 'colors', label: '🎨 颜色', icon: '🎨' },
+              { id: 'size', label: '📐 尺寸', icon: '📐' },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  flex: 1, padding: '8px', borderRadius: '10px', border: 'none',
+                  background: activeTab === tab.id ? 'linear-gradient(135deg, #00bfff, #9370db)' : 'rgba(255,255,255,0.05)',
+                  color: 'white', fontSize: '12px', cursor: 'pointer',
+                  fontWeight: activeTab === tab.id ? 'bold' : 'normal'
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
-          {/* 体型设置 */}
-          <div style={{
-            background: 'rgba(0, 0, 0, 0.3)',
-            borderRadius: '12px',
-            padding: '16px',
-            marginBottom: '16px',
-          }}>
-            <div style={{ color: '#00bfff', fontSize: '13px', fontWeight: 'bold', marginBottom: '12px' }}>
-              📐 体型
-            </div>
-            <Slider
-              label="眼睛大小"
-              value={appearance.eyeSize}
-              min={0.5}
-              max={1.5}
-              step={0.05}
-              onChange={v => setAppearance('eyeSize', v)}
-              description="调整眼睛的比例"
-            />
-            <Slider
-              label="眼睛间距"
-              value={appearance.eyeSpacing}
-              min={0.5}
-              max={1.5}
-              step={0.05}
-              onChange={v => setAppearance('eyeSpacing', v)}
-              description="调整双眼之间的距离"
-            />
-            <Slider
-              label="耳朵大小"
-              value={appearance.earSize}
-              min={0.5}
-              max={1.5}
-              step={0.05}
-              onChange={v => setAppearance('earSize', v)}
-            />
-            <Slider
-              label="耳朵角度"
-              value={appearance.earAngle}
-              min={0}
-              max={0.8}
-              step={0.05}
-              onChange={v => setAppearance('earAngle', v)}
-              description="耳朵向外展开的角度"
-            />
-            <Slider
-              label="身体圆润度"
-              value={appearance.bodyRoundness}
-              min={0.8}
-              max={1.5}
-              step={0.05}
-              onChange={v => setAppearance('bodyRoundness', v)}
-            />
-          </div>
+          <div style={{ padding: '16px 20px 20px' }}>
+            {/* 形状 Tab */}
+            {activeTab === 'shapes' && BODY_PARTS.map(part => (
+              <div key={part.key} style={{ marginBottom: '16px' }}>
+                <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '13px', marginBottom: '8px', fontWeight: 'bold' }}>
+                  {part.name}
+                </div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {SHAPES.map(shape => (
+                    <button
+                      key={shape.id}
+                      onClick={() => setPartShape(part.key, shape.id)}
+                      style={{
+                        padding: '8px 12px', borderRadius: '10px', border: '1px solid',
+                        borderColor: appearance.shapes[part.key] === shape.id ? '#00bfff' : 'rgba(255,255,255,0.2)',
+                        background: appearance.shapes[part.key] === shape.id ? 'rgba(0, 191, 255, 0.2)' : 'rgba(0, 0, 0, 0.3)',
+                        color: 'white', fontSize: '12px', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '4px'
+                      }}
+                    >
+                      {shape.icon} {shape.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
 
-          {/* 质感设置 */}
-          <div style={{
-            background: 'rgba(0, 0, 0, 0.3)',
-            borderRadius: '12px',
-            padding: '16px',
-            marginBottom: '16px',
-          }}>
-            <div style={{ color: '#00bfff', fontSize: '13px', fontWeight: 'bold', marginBottom: '12px' }}>
-              ✨ 质感
-            </div>
-            <Slider
-              label="腮红浓度"
-              value={appearance.blushIntensity}
-              min={0}
-              max={1}
-              step={0.05}
-              onChange={v => setAppearance('blushIntensity', v)}
-            />
-            <Slider
-              label="发光强度"
-              value={appearance.glowIntensity}
-              min={0}
-              max={1}
-              step={0.05}
-              onChange={v => setAppearance('glowIntensity', v)}
-              description="身体边缘的梦幻光晕"
-            />
-            <Slider
-              label="毛绒粗糙度"
-              value={appearance.furRoughness}
-              min={0.3}
-              max={1}
-              step={0.05}
-              onChange={v => setAppearance('furRoughness', v)}
-              description="数值越高越像长毛，越低越光滑"
-            />
-          </div>
+            {/* 颜色 Tab */}
+            {activeTab === 'colors' && BODY_PARTS.map(part => (
+              <ColorPicker
+                key={part.key}
+                label={part.name}
+                value={appearance.colors[part.key] || '#ffb6c1'}
+                onChange={v => setPartColor(part.key, v)}
+              />
+            ))}
 
-          {/* 预设配色 */}
-          <div style={{
-            background: 'rgba(0, 0, 0, 0.3)',
-            borderRadius: '12px',
-            padding: '16px',
-          }}>
-            <div style={{ color: '#00bfff', fontSize: '13px', fontWeight: 'bold', marginBottom: '12px' }}>
-              🎭 快速预设
-            </div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {[
-                { name: '樱花粉', body: '#ffb6c1', belly: '#ff69b4' },
-                { name: '天空蓝', body: '#87ceeb', belly: '#00bfff' },
-                { name: '薰衣草', body: '#e6e6fa', belly: '#9370db' },
-                { name: '薄荷绿', body: '#98fb98', belly: '#00fa9a' },
-                { name: '蜜桃橙', body: '#ffdab9', belly: '#ff8c00' },
-                { name: '星空紫', body: '#b19cd9', belly: '#663399' },
-              ].map(preset => (
-                <button
-                  key={preset.name}
-                  onClick={() => {
-                    setAppearance('bodyColor', preset.body)
-                    setAppearance('bellyColor', preset.belly)
-                  }}
-                  style={{
-                    padding: '8px 14px',
-                    borderRadius: '20px',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    background: 'rgba(0, 0, 0, 0.5)',
-                    color: 'white',
-                    fontSize: '12px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                  }}
-                >
-                  <span style={{
-                    width: '12px',
-                    height: '12px',
-                    borderRadius: '50%',
-                    background: preset.body,
-                    display: 'inline-block',
-                  }} />
-                  {preset.name}
-                </button>
-              ))}
-            </div>
+            {/* 尺寸 Tab */}
+            {activeTab === 'size' && BODY_PARTS.map(part => (
+              <div key={part.key} style={{ marginBottom: '16px', padding: '12px', background: 'rgba(0,0,0,0.3)', borderRadius: '12px' }}>
+                <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '13px', marginBottom: '8px', fontWeight: 'bold' }}>
+                  {part.name}
+                </div>
+                {['x', 'y', 'z'].map(axis => (
+                  <Slider
+                    key={axis}
+                    label={`${axis.toUpperCase()} 轴缩放`}
+                    value={(appearance.scales[part.key] || { x: 1, y: 1, z: 1 })[axis]}
+                    min={0.2}
+                    max={3}
+                    step={0.05}
+                    onChange={v => setPartScale(part.key, axis, v)}
+                  />
+                ))}
+              </div>
+            ))}
           </div>
         </div>
       )}
